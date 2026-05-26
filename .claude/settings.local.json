@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:tradoxvps.com)",
+      "WebFetch(domain:pypi.org)",
+      "WebFetch(domain:docs.polymarket.com)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "WebFetch(domain:rekko.ai)"
+    ]
+  }
+}

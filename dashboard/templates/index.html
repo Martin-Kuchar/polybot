@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>POLYBOT</title>
+<link rel="stylesheet" href="/static/terminal.css">
+<!-- Chart.js — browser only, loaded at runtime -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+</head>
+<body>
+
+<div id="app">
+
+  <!-- ── Status bar ─────────────────────────────────────────────────── -->
+  <div id="status-bar" class="panel">
+    <span class="brand">POLYBOT</span>
+    <span id="dot" class="stopped"></span>
+    <span class="ts" id="clock"></span>
+    <span class="spacer"></span>
+    <span class="kv">USDC&nbsp;<span id="balance-usdc">…</span></span>
+    <span class="kv">MATIC&nbsp;<span id="balance-matic">…</span></span>
+    <span class="kv">P&amp;L&nbsp;<span id="stat-total-pnl">—</span></span>
+    <span class="kv">WIN%&nbsp;<span id="stat-win-rate">—</span></span>
+    <button class="ctrl-btn" onclick="ctrlStart()">START</button>
+    <button class="ctrl-btn stop" onclick="ctrlStop()">STOP</button>
+  </div>
+
+  <!-- ── Live Markets ───────────────────────────────────────────────── -->
+  <div id="panel-markets" class="panel">
+    <div class="panel-title">LIVE MARKETS</div>
+    <div class="panel-body">
+      <div class="mkt-hdr">
+        <span>TIME</span>
+        <span>UP</span>
+        <span>DOWN</span>
+        <span>STATUS</span>
+      </div>
+      <div id="markets-body">
+        <div style="color:#446644;padding:8px 0">WAITING FOR TICK…</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── P&L Chart ──────────────────────────────────────────────────── -->
+  <div id="panel-chart" class="panel">
+    <div class="panel-title">CUMULATIVE P&amp;L (USDC)</div>
+    <div class="panel-body" style="padding:4px">
+      <canvas id="chart-canvas"></canvas>
+    </div>
+  </div>
+
+  <!-- ── Trade History ──────────────────────────────────────────────── -->
+  <div id="panel-history" class="panel">
+    <div class="panel-title">TRADE HISTORY</div>
+    <div class="panel-body">
+      <div class="trade-hdr">
+        <span>TIME</span>
+        <span>SIDE</span>
+        <span>PRICE</span>
+        <span>SH</span>
+        <span>RESULT</span>
+        <span>P&amp;L</span>
+      </div>
+      <div id="trade-tbody"></div>
+    </div>
+  </div>
+
+  <!-- ── Stats ──────────────────────────────────────────────────────── -->
+  <div id="panel-stats" class="panel">
+    <div class="panel-title">STATISTICS</div>
+    <div class="panel-body">
+
+      <div class="stats-grid">
+        <div class="stat-block">
+          <div class="stat-label">TOTAL BETS</div>
+          <div class="stat-value" id="stat-total-bets">—</div>
+        </div>
+        <div class="stat-block">
+          <div class="stat-label">WIN RATE</div>
+          <div class="stat-value amber" id="stat-win-rate-2">—</div>
+        </div>
+        <div class="stat-block">
+          <div class="stat-label">ALL-TIME P&amp;L</div>
+          <div class="stat-value" id="stat-total-pnl-2">—</div>
+        </div>
+        <div class="stat-block">
+          <div class="stat-label">PENDING</div>
+          <div class="stat-value dim" id="stat-pending">—</div>
+        </div>
+
+        <div class="stats-divider"></div>
+
+        <div class="stat-block">
+          <div class="stat-label">TODAY BETS</div>
+          <div class="stat-value dim" id="stat-today-bets">—</div>
+        </div>
+        <div class="stat-block">
+          <div class="stat-label">TODAY WINS</div>
+          <div class="stat-value dim" id="stat-today-wins">—</div>
+        </div>
+        <div class="stat-block">
+          <div class="stat-label">TODAY P&amp;L</div>
+          <div class="stat-value dim" id="stat-today-pnl">—</div>
+        </div>
+        <div class="stat-block">
+          <div class="stat-label">SIMULATED</div>
+          <div class="stat-value dim" id="stat-simulated">—</div>
+        </div>
+      </div>
+
+      <div class="balance-row">
+        <span class="bl">USDC</span>
+        <span class="bv" id="balance-usdc-2">…</span>
+        <span class="bl">MATIC</span>
+        <span class="bv" id="balance-matic-2">…</span>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ── Log tail ───────────────────────────────────────────────────── -->
+  <div id="panel-log" class="panel">
+    <div class="panel-title">LOG</div>
+    <div class="panel-body" id="log-body"></div>
+  </div>
+
+</div>
+
+<!-- Socket.IO 4.x — matches Flask-SocketIO 5.x (Engine.IO 4 / protocol v5) -->
+<script src="https://cdn.socket.io/4.7.5/socket.io.min.js" crossorigin="anonymous"></script>
+<script src="/static/terminal.js"></script>
+
+<script>
+// Mirror some stats to secondary elements in stats panel
+const _origUpdateStats = updateStats;
+updateStats = function(s) {
+  _origUpdateStats(s);
+  const el2 = document.getElementById('stat-win-rate-2');
+  if (el2) el2.textContent = s.total_bets > 0 ? (s.win_rate * 100).toFixed(1) + '%' : '—';
+  const p2 = document.getElementById('stat-total-pnl-2');
+  if (p2) {
+    p2.textContent = fmtPnl(s.total_pnl);
+    p2.className = 'stat-value ' + (s.total_pnl >= 0 ? '' : 'red');
+  }
+  // Mirror balance to stats panel
+  const bu = document.getElementById('balance-usdc-2');
+  const bm = document.getElementById('balance-matic-2');
+  if (bu) bu.textContent = document.getElementById('balance-usdc').textContent;
+  if (bm) bm.textContent = document.getElementById('balance-matic').textContent;
+};
+</script>
+
+</body>
+</html>
