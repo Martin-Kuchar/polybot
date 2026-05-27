@@ -33,6 +33,7 @@ class Bot:
         self.api = PolymarketAPI(config)
         self.strategy = get_strategy(config.active_strategy, config)
         self.on_tick = on_tick
+        self.on_resolution: Optional[Callable] = None
 
         # Per-market state keyed by end-timestamp
         self._contexts: dict[int, StrategyContext] = {}
@@ -78,6 +79,11 @@ class Bot:
     # ── Main loop ─────────────────────────────────────────────────────────────
 
     def _loop(self):
+        try:
+            self._resolve_pending_bets()
+        except Exception as e:
+            log.warning("Startup resolution pass failed: %s", e)
+
         while self._running:
             t0 = time.monotonic()
             try:
@@ -134,6 +140,8 @@ class Bot:
         for ts in [k for k in self._contexts if k < cutoff]:
             del self._contexts[ts]
 
+        self._resolve_pending_bets()
+
         self.status["active_markets"] = market_infos
         self.status["tick_count"] += 1
 
@@ -142,6 +150,26 @@ class Bot:
                 self.on_tick(self.status)
             except Exception as e:
                 log.warning("on_tick callback error: %s", e)
+
+    def _resolve_pending_bets(self):
+        """Check any past markets that have bets but no resolution yet."""
+        now = time.time()
+        any_resolved = False
+        for condition_id, market_ts in self.tracker.pending_past_bets(now):
+            resolution = self.api.get_market_resolution(market_ts)
+            if resolution is None:
+                continue
+            updated = self.tracker.update_resolution(condition_id, resolution)
+            if updated:
+                log.info("Resolved pending bet: %s → %s", condition_id[:8], resolution)
+                any_resolved = True
+                if self.config.production:
+                    self._maybe_redeem(condition_id, resolution)
+        if any_resolved and self.on_resolution:
+            try:
+                self.on_resolution({"stats": self.tracker.stats()})
+            except Exception as e:
+                log.warning("on_resolution callback error: %s", e)
 
     # ── Resolution ────────────────────────────────────────────────────────────
 

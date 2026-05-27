@@ -219,9 +219,27 @@ class PolymarketAPI:
         markets = data.get("markets", [])
         if not markets:
             return None
-        for token in markets[0].get("tokens", []):
+        market = markets[0]
+
+        # Method 1: tokens[].winner (present on some responses)
+        for token in market.get("tokens", []):
             if token.get("winner"):
-                return token.get("outcome")
+                outcome = token.get("outcome")
+                if outcome:
+                    return outcome
+
+        # Method 2: outcomePrices — winner resolves to "1" (or nearest to 1.0)
+        try:
+            prices = json.loads(market.get("outcomePrices", "[]"))
+            outcomes = json.loads(market.get("outcomes", "[]"))
+            if len(prices) == len(outcomes) == 2:
+                idx = max(range(2), key=lambda i: float(prices[i]))
+                if float(prices[idx]) >= 0.9:
+                    log.debug("Resolution via outcomePrices: %s → %s", slug, outcomes[idx])
+                    return outcomes[idx]
+        except (json.JSONDecodeError, ValueError, TypeError):
+            pass
+
         return None
 
     # ── Order placement (CLOB v2) ─────────────────────────────────────────────

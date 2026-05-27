@@ -69,6 +69,10 @@ def create_app(config, tracker, bot):
             "stats": tracker.stats(),
         })
 
+    def push_resolution(data: dict):
+        socketio.emit("resolution", data)
+
     bot.on_tick = push_tick
+    bot.on_resolution = push_resolution
 
     return app, socketio

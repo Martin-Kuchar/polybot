@@ -144,6 +144,19 @@ class TradeTracker:
         with self._lock:
             return any(t.condition_id == condition_id for t in self._trades)
 
+    def pending_past_bets(self, now: float) -> list[tuple[str, int]]:
+        """Return (condition_id, market_timestamp) for bets in ended markets not yet resolved."""
+        with self._lock:
+            seen: set[str] = set()
+            result: list[tuple[str, int]] = []
+            for t in self._trades:
+                if t.resolution or t.condition_id in seen:
+                    continue
+                if t.market_timestamp < now:
+                    seen.add(t.condition_id)
+                    result.append((t.condition_id, t.market_timestamp))
+            return result
+
     def all_trades(self, limit: int = 50) -> list[dict]:
         with self._lock:
             recent = self._trades[-limit:]
