@@ -256,7 +256,7 @@ class PolymarketAPI:
                 size=float(shares),
             ),
             options=PartialCreateOrderOptions(tick_size="0.01"),
-            order_type=OrderType.FOK,
+            order_type=OrderType.FAK,
         )
 
     # ── Balance ───────────────────────────────────────────────────────────────

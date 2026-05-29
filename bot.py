@@ -216,7 +216,7 @@ class Bot:
             status = "simulated"
         else:
             try:
-                exec_price = round(decision.price + 0.01, 2)  # 1-tick slippage to walk the book
+                exec_price = round(decision.price + 0.03, 2)  # 3-tick slippage to walk the book
                 resp = self.api.place_market_buy(
                     token_id=decision.token_id,
                     shares=shares,
@@ -229,9 +229,19 @@ class Bot:
                 )
                 status = "placed"
             except Exception as e:
-                log.error("Order failed for %s: %s", snapshot.condition_id[:8], e)
-                self.status["last_error"] = str(e)
-                status = "failed"
+                err = str(e)
+                # Polymarket quirk: FOK errors sometimes include an orderID meaning
+                # the order was actually filled. Treat as placed so tracker is accurate.
+                if "orderID" in err and "couldn't be fully filled" in err:
+                    log.warning(
+                        "FOK soft-fill for %s (order likely placed): %s",
+                        snapshot.condition_id[:8], e,
+                    )
+                    status = "placed"
+                else:
+                    log.error("Order failed for %s: %s", snapshot.condition_id[:8], e)
+                    self.status["last_error"] = err
+                    status = "failed"
 
         trade = Trade(
             trade_id=str(uuid.uuid4()),

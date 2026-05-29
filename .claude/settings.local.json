@@ -6,7 +6,8 @@
       "WebFetch(domain:pypi.org)",
       "WebFetch(domain:docs.polymarket.com)",
       "WebFetch(domain:raw.githubusercontent.com)",
-      "WebFetch(domain:rekko.ai)"
+      "WebFetch(domain:rekko.ai)",
+      "Bash(python -c \"import sys; sys.path.insert\\(0, r'C:\\\\Users\\\\marti\\\\AppData\\\\Local\\\\Programs\\\\Python\\\\Python313\\\\Lib\\\\site-packages'\\); from py_clob_client_v2 import OrderType; import inspect; print\\(inspect.getsource\\(OrderType\\)\\)\")"
     ]
   }
 }
