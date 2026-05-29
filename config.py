@@ -53,7 +53,7 @@ class Config:
 
     # Dashboard
     dashboard_port: int = field(default_factory=lambda: _int("DASHBOARD_PORT", 8080))
-    dashboard_host: str = field(default_factory=lambda: _str("DASHBOARD_HOST", "127.0.0.1"))
+    dashboard_host: str = field(default_factory=lambda: _str("DASHBOARD_HOST", "0.0.0.0"))
 
     # Paths
     trades_csv: str = field(default_factory=lambda: _str("TRADES_CSV", "data/trades.csv"))
