@@ -216,14 +216,15 @@ class Bot:
             status = "simulated"
         else:
             try:
+                exec_price = round(decision.price + 0.01, 2)  # 1-tick slippage to walk the book
                 resp = self.api.place_market_buy(
                     token_id=decision.token_id,
                     shares=shares,
-                    price=decision.price,
+                    price=exec_price,
                 )
                 log.info(
-                    "ORDER PLACED: %s %d @ %.3f  market=%s  resp=%s",
-                    decision.side, shares, decision.price,
+                    "ORDER PLACED: %s %d @ %.3f (limit %.3f)  market=%s  resp=%s",
+                    decision.side, shares, decision.price, exec_price,
                     snapshot.condition_id[:8], resp,
                 )
                 status = "placed"
