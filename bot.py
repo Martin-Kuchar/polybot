@@ -216,7 +216,7 @@ class Bot:
             status = "simulated"
         else:
             try:
-                exec_price = round(decision.price + 0.03, 2)  # 3-tick slippage to walk the book
+                exec_price = round(decision.price + 0.02, 2)  # 3-tick slippage to walk the book
                 resp = self.api.place_market_buy(
                     token_id=decision.token_id,
                     shares=shares,
