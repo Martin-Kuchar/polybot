@@ -7,6 +7,11 @@ services:
     restart: unless-stopped
     ports:
       - "192.168.1.75:8080:8080"
+    environment:
+      - PRIVATE_KEY=${PRIVATE_KEY}
+      - DEPOSIT_WALLET_ADDRESS=${DEPOSIT_WALLET_ADDRESS}
+      - PRODUCTION=${PRODUCTION:-false}
+      - SHARES_PER_BET=${SHARES_PER_BET:-2}
     volumes:
       - ./data:/app/data
       - ./logs:/app/logs
