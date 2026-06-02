@@ -41,6 +41,7 @@ class Config:
     bet_second: int = field(default_factory=lambda: _int("BET_SECOND", 90))
     price_min: float = field(default_factory=lambda: _float("PRICE_MIN", 0.85))
     price_max: float = field(default_factory=lambda: _float("PRICE_MAX", 0.96))
+    bet_price_min: float = field(default_factory=lambda: _float("BET_PRICE_MIN", 0.0))
     bet_price_max: float = field(default_factory=lambda: _float("BET_PRICE_MAX", 0.98))
 
     # APIs

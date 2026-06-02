@@ -35,19 +35,13 @@ def main():
     setup_logging(config.log_file)
     log = logging.getLogger("main")
 
-    import subprocess
-    try:
-        commit = subprocess.check_output(["git", "rev-parse", "--short", "HEAD"], text=True).strip()
-    except Exception:
-        commit = "unknown"
-
     log.info("=" * 60)
-    log.info("POLYBOT  commit=%s", commit)
+    log.info("POLYBOT  secret message: cicik")
     log.info("  strategy   : %s", config.active_strategy)
     log.info("  production : %s", config.production)
     log.info("  shares/bet : %d", config.shares_per_bet)
     log.info("  watch      : T-%ds in [%.2f, %.2f)", config.watch_second, config.price_min, config.price_max)
-    log.info("  bet cap    : %.2f", config.bet_price_max)
+    log.info("  bet range  : [%.2f, %.2f)", config.bet_price_min, config.bet_price_max)
     log.info("  dashboard  : http://%s:%d", config.dashboard_host, config.dashboard_port)
     log.info("=" * 60)
 

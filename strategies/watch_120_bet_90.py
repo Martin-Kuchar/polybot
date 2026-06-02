@@ -15,6 +15,7 @@ class Watch120Bet90(Strategy):
         self.bet_second = config.bet_second       # default 90
         self.price_min = config.price_min         # default 0.85
         self.price_max = config.price_max         # default 0.96
+        self.bet_price_min = config.bet_price_min # default 0.0
         self.bet_price_max = config.bet_price_max # default 0.98
 
     def evaluate(self, ctx: StrategyContext, snapshot: MarketState) -> Optional[BetDecision]:
@@ -43,6 +44,9 @@ class Watch120Bet90(Strategy):
             if lo <= t <= hi:
                 if fav_side != ctx.flagged_side:
                     ctx.bet_placed = True  # side flipped — skip
+                    return None
+                if fav_ask < self.bet_price_min:
+                    ctx.bet_placed = True  # price too low — skip
                     return None
                 if fav_ask >= self.bet_price_max:
                     ctx.bet_placed = True  # payout too small — skip

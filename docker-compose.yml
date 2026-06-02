@@ -12,6 +12,8 @@ services:
       - DEPOSIT_WALLET_ADDRESS=${DEPOSIT_WALLET_ADDRESS}
       - PRODUCTION=${PRODUCTION:-false}
       - SHARES_PER_BET=${SHARES_PER_BET:-2}
+      - BET_PRICE_MIN=${BET_PRICE_MIN:-0.60}
+      - BET_PRICE_MAX=${BET_PRICE_MAX:-0.97}
     volumes:
       - ./data:/app/data
       - ./logs:/app/logs
