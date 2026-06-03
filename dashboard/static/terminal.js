@@ -70,7 +70,7 @@ socket.on('resolution', (data) => {
 // ── Initial data fetch ────────────────────────────────────────────────────
 
 function fetchInitial() {
-  fetch('/api/trades').then(r => r.json()).then(trades => {
+  fetch('/api/trades?limit=200').then(r => r.json()).then(trades => {
     const tbody = document.getElementById('trade-tbody');
     tbody.innerHTML = '';
     trades.forEach(t => appendTradeRow(tbody, t));
@@ -80,7 +80,7 @@ function fetchInitial() {
 }
 
 function refreshTrades() {
-  fetch('/api/trades').then(r => r.json()).then(trades => {
+  fetch('/api/trades?limit=200').then(r => r.json()).then(trades => {
     const tbody = document.getElementById('trade-tbody');
     tbody.innerHTML = '';
     trades.forEach(t => appendTradeRow(tbody, t));
@@ -172,11 +172,9 @@ function buildTradeRow(t) {
   if (t.won === '1') {
     statusText = 'WIN'; statusClass = 'win';
     pnlText = '+' + parseFloat(t.pnl).toFixed(2);
-    row.classList.add('win');
   } else if (t.won === '0') {
     statusText = 'LOSS'; statusClass = 'loss';
     pnlText = parseFloat(t.pnl).toFixed(2);
-    row.classList.add('loss');
   } else if (t.status === 'simulated') {
     statusText = 'SIM'; statusClass = 'sim'; pnlText = '—';
   } else if (t.status === 'failed') {
@@ -185,7 +183,8 @@ function buildTradeRow(t) {
     statusText = 'PEND'; statusClass = 'pend'; pnlText = '—';
   }
 
-  row.className = 'trade-row';
+  const rowExtra = t.won === '1' ? ' win' : t.won === '0' ? ' loss' : '';
+  row.className = 'trade-row' + rowExtra;
   row.innerHTML = `
     <span class="ts-cell">${ts}</span>
     <span class="side-cell ${sideClass}">${t.side.toUpperCase()}</span>
@@ -298,7 +297,7 @@ function initChart() {
 }
 
 function refreshChart() {
-  fetch('/api/trades?limit=200').then(r => r.json()).then(trades => {
+  fetch('/api/trades?limit=5000').then(r => r.json()).then(trades => {
     // Build cumulative P&L from oldest to newest
     const resolved = trades.filter(t => t.pnl !== '').reverse();
     let cum = 0;

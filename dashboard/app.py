@@ -72,7 +72,11 @@ def create_app(config, tracker, bot):
     def push_resolution(data: dict):
         socketio.emit("resolution", data)
 
+    def push_trade(trade: dict):
+        socketio.emit("trade", trade)
+
     bot.on_tick = push_tick
     bot.on_resolution = push_resolution
+    bot.on_trade = push_trade
 
     return app, socketio

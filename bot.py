@@ -34,6 +34,7 @@ class Bot:
         self.strategy = get_strategy(config.active_strategy, config)
         self.on_tick = on_tick
         self.on_resolution: Optional[Callable] = None
+        self.on_trade: Optional[Callable] = None
 
         # Per-market state keyed by end-timestamp
         self._contexts: dict[int, StrategyContext] = {}
@@ -189,6 +190,11 @@ class Bot:
             log.info("Market %s resolved: %s", snapshot.condition_id[:8], resolution)
             if self.config.production:
                 self._maybe_redeem(snapshot.condition_id, resolution)
+            if self.on_resolution:
+                try:
+                    self.on_resolution({"stats": self.tracker.stats()})
+                except Exception as e:
+                    log.warning("on_resolution callback error: %s", e)
 
     def _maybe_redeem(self, condition_id: str, resolution: str):
         for t in self.tracker._trades:
@@ -258,6 +264,11 @@ class Bot:
             reason=decision.reason,
         )
         self.tracker.record(trade)
+        if self.on_trade:
+            try:
+                self.on_trade({k: getattr(trade, k) for k in trade.__dataclass_fields__})
+            except Exception as e:
+                log.warning("on_trade callback error: %s", e)
         self.status["last_action"] = (
             f"{status.upper()}: {decision.side} @ {decision.price:.3f} "
             f"({snapshot.condition_id[:8]})"

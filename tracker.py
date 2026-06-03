@@ -2,6 +2,7 @@ from __future__ import annotations
 import csv
 import datetime
 import logging
+import os
 import threading
 import time
 from dataclasses import dataclass
@@ -103,11 +104,13 @@ class TradeTracker:
             writer.writerow({k: getattr(trade, k) for k in CSV_FIELDS})
 
     def _rewrite_all(self):
-        with open(self.csv_path, "w", newline="", encoding="utf-8") as f:
+        tmp = self.csv_path.with_suffix(".tmp")
+        with open(tmp, "w", newline="", encoding="utf-8") as f:
             writer = csv.DictWriter(f, fieldnames=CSV_FIELDS)
             writer.writeheader()
             for t in self._trades:
                 writer.writerow({k: getattr(t, k) for k in CSV_FIELDS})
+        os.replace(tmp, self.csv_path)
 
     # ── Public API ────────────────────────────────────────────────────────────
 
