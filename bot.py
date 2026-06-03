@@ -97,6 +97,8 @@ class Bot:
             time.sleep(sleep_for)
 
     def tick(self):
+        self.status["last_action"] = ""
+        self.status["last_error"] = ""
         timestamps = _upcoming_market_timestamps(4)
         market_infos = []
 
@@ -164,8 +166,6 @@ class Bot:
             if updated:
                 log.info("Resolved pending bet: %s → %s", condition_id[:8], resolution)
                 any_resolved = True
-                if self.config.production:
-                    self._maybe_redeem(condition_id, resolution)
         if any_resolved and self.on_resolution:
             try:
                 self.on_resolution({"stats": self.tracker.stats()})
@@ -188,19 +188,11 @@ class Bot:
 
         if updated:
             log.info("Market %s resolved: %s", snapshot.condition_id[:8], resolution)
-            if self.config.production:
-                self._maybe_redeem(snapshot.condition_id, resolution)
             if self.on_resolution:
                 try:
                     self.on_resolution({"stats": self.tracker.stats()})
                 except Exception as e:
                     log.warning("on_resolution callback error: %s", e)
-
-    def _maybe_redeem(self, condition_id: str, resolution: str):
-        for t in self.tracker._trades:
-            if t.condition_id == condition_id and t.won == "1":
-                self.api.redeem_winning_position(condition_id, t.side == "Up")
-                break
 
     # ── Order placement ───────────────────────────────────────────────────────
 

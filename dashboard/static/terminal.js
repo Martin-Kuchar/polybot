@@ -113,7 +113,10 @@ function renderMarkets(markets) {
     const ss  = String(rem % 60).padStart(2, '0');
     const timer = `${mm}:${ss}`;
 
-    const upFav = m.up_ask >= m.down_ask;
+    const hasAsks = m.up_ask > 0 && m.down_ask > 0;
+    const upFav = hasAsks ? m.up_ask >= m.down_ask : false;
+    const upStr = hasAsks ? m.up_ask.toFixed(3) : '—';
+    const dnStr = hasAsks ? m.down_ask.toFixed(3) : '—';
 
     let badge, badgeClass;
     if (m.bet_placed && m.flagged_side) {
@@ -132,11 +135,11 @@ function renderMarkets(markets) {
       <span class="timer">${timer}</span>
       <div class="price-cell up-cell${upFav ? ' fav' : ''}">
         <span class="lbl">UP</span>
-        <span class="val">${m.up_ask.toFixed(3)}</span>
+        <span class="val">${upStr}</span>
       </div>
       <div class="price-cell dn-cell${!upFav ? ' fav' : ''}">
         <span class="lbl">DOWN</span>
-        <span class="val">${m.down_ask.toFixed(3)}</span>
+        <span class="val">${dnStr}</span>
       </div>
       <span class="badge ${badgeClass}">${badge}</span>
     </div>`;
@@ -152,8 +155,8 @@ function prependTradeRow(trade) {
   tbody.insertBefore(row, tbody.firstChild);
   row.classList.add('flash');
   setTimeout(() => row.classList.remove('flash'), 1500);
-  // Keep max 50 rows
-  while (tbody.children.length > 50) tbody.removeChild(tbody.lastChild);
+  // Keep max 200 rows (matches server fetch limit)
+  while (tbody.children.length > 200) tbody.removeChild(tbody.lastChild);
 }
 
 function appendTradeRow(tbody, trade) {

@@ -36,7 +36,7 @@ def main():
     log = logging.getLogger("main")
 
     log.info("=" * 60)
-    log.info("POLYBOT  secret message: vagi")
+    log.info("POLYBOT  secret message: vagibot")
     log.info("  strategy   : %s", config.active_strategy)
     log.info("  production : %s", config.production)
     log.info("  shares/bet : %d", config.shares_per_bet)

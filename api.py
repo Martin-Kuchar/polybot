@@ -191,12 +191,11 @@ class PolymarketAPI:
                 closed=True,
             )
 
-        up_ask = self._get_best_ask(up_token_id)
-        down_ask = self._get_best_ask(down_token_id)
+        up_ask = self._get_best_ask(up_token_id) or 0.0
+        down_ask = self._get_best_ask(down_token_id) or 0.0
 
-        if up_ask is None or down_ask is None:
-            log.debug("No asks for %s at T-%ds (up=%s down=%s)", slug, remaining, up_ask, down_ask)
-            return None
+        if up_ask == 0.0 and down_ask == 0.0:
+            log.debug("No asks for %s at T-%ds — showing market without prices", slug, remaining)
 
         return MarketState(
             timestamp=timestamp,
