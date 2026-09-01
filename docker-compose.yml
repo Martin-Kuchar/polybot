@@ -1,12 +1,12 @@
-version: '3.8'
+
 
 services:
   polybot:
     build: .
     container_name: polybot
     restart: unless-stopped
-    ports:
-      - "192.168.1.75:8080:8080"
+    #ports:
+    #  - "192.168.1.75:8080:8080"
     environment:
       - PRIVATE_KEY=${PRIVATE_KEY}
       - DEPOSIT_WALLET_ADDRESS=${DEPOSIT_WALLET_ADDRESS}
