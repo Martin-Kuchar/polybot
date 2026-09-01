@@ -14,6 +14,44 @@ from strategies.base import StrategyContext, BetDecision
 log = logging.getLogger(__name__)
 
 
+def _extract_execution_price(resp, fallback_price: float) -> float:
+    """Return the actual fill price when the order response contains fill data.
+
+    Polymarket can quote a book price (e.g. 0.78) while the executed fill lands at
+    a different level (e.g. 0.69) due to liquidity and slippage. The bot should
+    record the fill price, not the stale snapshot quote.
+    """
+    if not isinstance(resp, dict):
+        return float(fallback_price)
+
+    def as_float(value):
+        try:
+            return float(value)
+        except (TypeError, ValueError):
+            return None
+
+    fills = resp.get("fills") if isinstance(resp.get("fills"), list) else []
+    for fill in fills:
+        if not isinstance(fill, dict):
+            continue
+        fill_price = as_float(fill.get("price"))
+        if fill_price is not None:
+            return fill_price
+
+    order = resp.get("order") if isinstance(resp.get("order"), dict) else None
+    if order:
+        order_price = as_float(order.get("price"))
+        if order_price is not None:
+            return order_price
+
+    if isinstance(resp.get("price"), (int, float, str)):
+        fill_price = as_float(resp.get("price"))
+        if fill_price is not None:
+            return fill_price
+
+    return float(fallback_price)
+
+
 def _upcoming_market_timestamps(n: int = 4) -> list[int]:
     """Return the next n BTC 5m market end-timestamps (300s boundaries)."""
     now = int(time.time())
@@ -205,6 +243,7 @@ class Bot:
         cost = decision.price * shares
         fee = shares * 0.07 * decision.price * (1.0 - decision.price)
 
+        trade_price = decision.price
         if not self.config.production:
             log.info(
                 "SIMULATED: %s %d shares @ %.3f  market=%s  (%s)",
@@ -220,9 +259,10 @@ class Bot:
                     shares=shares,
                     price=exec_price,
                 )
+                trade_price = _extract_execution_price(resp, decision.price)
                 log.info(
-                    "ORDER PLACED: %s %d @ %.3f (limit %.3f)  market=%s  resp=%s",
-                    decision.side, shares, decision.price, exec_price,
+                    "ORDER PLACED: %s %d @ %.3f (limit %.3f, exec %.3f)  market=%s  resp=%s",
+                    decision.side, shares, trade_price, exec_price, trade_price,
                     snapshot.condition_id[:8], resp,
                 )
                 status = "placed"
@@ -236,10 +276,12 @@ class Bot:
                         snapshot.condition_id[:8], e,
                     )
                     status = "placed"
+                    trade_price = decision.price
                 else:
                     log.error("Order failed for %s: %s", snapshot.condition_id[:8], e)
                     self.status["last_error"] = err
                     status = "failed"
+                    trade_price = decision.price
 
         trade = Trade(
             trade_id=str(uuid.uuid4()),
@@ -248,10 +290,10 @@ class Bot:
             condition_id=snapshot.condition_id,
             side=decision.side,
             token_id=decision.token_id,
-            price=decision.price,
+            price=trade_price,
             shares=shares,
-            cost_usdc=cost,
-            fee_estimate=fee,
+            cost_usdc=trade_price * shares,
+            fee_estimate=shares * 0.07 * trade_price * (1.0 - trade_price),
             status=status,
             reason=decision.reason,
         )
